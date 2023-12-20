@@ -1,45 +1,55 @@
-import AddProduct from "./AddProduct";
-import DeleteProduct from "./DeleteProduct";
-import UpdateProduct from "./UpdateProduct.";
-
-type Product = {
-  id: number;
-  title: string;
-  price: number;
-};
+import { PrismaClient } from "@prisma/client";
+import AddProduct from "./addProduct";
+import DeleteProduct from "./deleteProduct";
+import UpdateProduct from "./updateProduct";
+const prisma = new PrismaClient();
 
 const getProducts = async () => {
-  const res = await fetch("http://localhost:5000/products", {
-    cache: "no-store",
+  const res = await prisma.product.findMany({
+    select: {
+      id: true,
+      title: true,
+      price: true,
+      brandId: true,
+      brand: true,
+    },
   });
-  return res.json();
+  return res;
 };
 
-const ProductList = async () => {
-  const products: Product[] = await getProducts();
+const getBrands = async () => {
+  const res = await prisma.brand.findMany();
+  return res;
+};
+
+const Product = async () => {
+  const [products, brands] = await Promise.all([getProducts(), getBrands()]);
+
   return (
-    <div className="p-10 max-w-7xl mx-auto">
-      <div className="py-2">
-        <AddProduct />
+    <div className="container mx-auto">
+      <div className="mb-2">
+        <AddProduct brands={brands} />
       </div>
-      <table className="table">
+      <table className="table w-full">
         <thead>
-          <tr className="font-xl">
+          <tr className="uppercase bg-base-300">
             <th>#</th>
             <th>Product Name</th>
             <th>Price</th>
-            <th>Actions</th>
+            <th>Brand</th>
+            <th className="text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
           {products.map((product, index) => (
             <tr key={product.id}>
-              <td className="whitespace-normal">{index + 1}</td>
-              <td className="min-w-[8rem] max-w-[12rem] whitespace-normal">{product.title}</td>
-              <td className="min-w-[8rem] max-w-[12rem] whitespace-normal">{product.price}</td>
-              <td className="flex gap-2 max-w-[8rem] whitespace-normal">
-                <UpdateProduct {...product}/>
-                <DeleteProduct {...product} />
+              <td>{index + 1}</td>
+              <td>{product.title}</td>
+              <td>{product.price}</td>
+              <td>{product.brand.name}</td>
+              <td className="flex justify-center space-x-1">
+                <UpdateProduct brands={brands} product={product} />
+                <DeleteProduct product={product} />
               </td>
             </tr>
           ))}
@@ -49,4 +59,4 @@ const ProductList = async () => {
   );
 };
 
-export default ProductList;
+export default Product;
